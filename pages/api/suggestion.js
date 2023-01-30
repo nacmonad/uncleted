@@ -15,11 +15,11 @@ export default async function (req, res) {
     return;
   }
 
-  const animal = req.body.animal || '';
-  if (animal.trim().length === 0) {
+  const location = req.body.location || '';
+  if (location.trim().length === 0) {
     res.status(400).json({
       error: {
-        message: "Please enter a valid animal",
+        message: "Please enter a valid location for a suggestion",
       }
     });
     return;
@@ -28,8 +28,8 @@ export default async function (req, res) {
   try {
     const completion = await openai.createCompletion({
       model: "text-davinci-003",
-      prompt: generatePrompt(animal),
-      max_tokens: 10,
+      prompt: generatePrompt(location),
+      max_tokens: 256,
       temperature: 0.6,
     });
     res.status(200).json({ result: completion.data.choices[0].text });
@@ -49,15 +49,28 @@ export default async function (req, res) {
   }
 }
 
-function generatePrompt(animal) {
-  const capitalizedAnimal =
-    animal[0].toUpperCase() + animal.slice(1).toLowerCase();
-  return `Suggest three names for an animal that is a superhero.
+function generatePrompt(location) {
+  
+  return `
+  I like renaissance art, Leonardo Da Vinci and Roman archeology.
 
-Animal: Cat
-Names: Captain Sharpclaw, Agent Fluffball, The Incredible Feline
-Animal: Dog
-Names: Ruff the Protector, Wonder Canine, Sir Barks-a-Lot
-Animal: ${capitalizedAnimal}
-Names:`;
+  I will prompt you with a location in text.  I need you to determine its' latitude & longitude, as well as any sites of archeological & historical significance that are in line what I like.
+  The historical sites should be within a 100km radius.
+  Return at most 3 historical sites.
+
+  You'll respond in a JSON format with any relevant fields you can fill in.  The format is 
+  {
+    historical_sites: Array
+  }
+
+  The historical_sites array object itself has the JSON format: 
+  historical_site {
+    name: String,
+    lat: Number,
+    lon: Number
+  }
+  
+  The response needs to be trimmed of newline characters '\n'
+
+  Generate me the response for the input location: ${location}`;
 }
